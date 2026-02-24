@@ -226,11 +226,23 @@
     display: flex; flex-direction: column; gap: 4px;
   }
   .multiaddr {
-    display: inline-block; padding: 3px 10px; border-radius: 6px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 10px; border-radius: 6px;
     background: #ffffff06; border: 1px solid var(--border);
-    font-size: .75rem; transition: background .2s;
+    font-size: .75rem; transition: all .2s;
   }
   .multiaddr:hover { background: #ffffff0d }
+  .multiaddr .addr-dot {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  }
+  .multiaddr .addr-dot.green {
+    background: var(--green); box-shadow: 0 0 6px var(--green-glow);
+  }
+  .multiaddr .addr-dot.red {
+    background: var(--red); box-shadow: 0 0 6px var(--red-glow);
+  }
+  .multiaddr.addr-online  { border-color: #00e67620 }
+  .multiaddr.addr-offline { border-color: #ff525220 }
 
   /* ── Animations ── */
   @keyframes fadeUp {
@@ -291,34 +303,34 @@
 // ── Mock Data ──
 const NETWORKS = {
   Polkadot: [
-    { key: "0x9a1e4f5c8d2b3e7a6f0c1d4e5b8a9f2c3d6e7f8a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWRkGLz4YbVmrsWK75VjFTs8NvaBu42xhAmQaP4QLJpKvG", identity: "Parity Technologies", multiaddresses: ["/dns4/polkadot-validator-0.parity.io/tcp/30333", "/ip4/34.90.151.124/tcp/30333/ws"], reachable: true },
-    { key: "0x2b6e3f8a1c4d7e9f0a5b8c2d3e6f1a4b7c0d9e8f5a2b3c4d1e6f7a8b9c0d1e2", peerId: "12D3KooWDgtynm4S9M3m6ZZhXYu2RrSKLgpkVFtLGZhVnkiQRya2", identity: "Web3 Foundation", multiaddresses: ["/dns4/w3f-validator.web3.foundation/tcp/30333", "/ip4/52.28.196.84/tcp/30333"], reachable: true },
-    { key: "0x7f4e2a8b1c3d5f6e9a0b2c4d6e8f1a3b5c7d9e0f2a4b6c8d0e1f3a5b7c9d0e1", peerId: "12D3KooWCVhY4PEgkLSMQ3jKvJwNSTctaYMwiAMfnaRnMnCAxkzz", identity: "Stakeworld", multiaddresses: ["/ip4/65.108.13.29/tcp/30333"], reachable: false },
-    { key: "0xaa3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e7f9a0b", peerId: "12D3KooWP2VsPJHL9RBJkFHTiyQfSqjE8DWz7tPqqZnGPAaV2d6a", identity: "Zug Capital", multiaddresses: ["/dns4/polkadot.zug-capital.com/tcp/30333", "/ip4/144.76.97.120/tcp/30333", "/ip4/144.76.97.120/tcp/443/wss"], reachable: true },
-    { key: "0xcc1d3e5f7a9b1c3d5e7f9a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d", peerId: "12D3KooWFN2mhgpkJsDBuNR6BUZMEfRqvDDASMqSnLiR2pJCFDeh", identity: "Polkadot.pro - Pair 1", multiaddresses: ["/ip4/5.9.106.214/tcp/30333"], reachable: true },
-    { key: "0xdd4e6f8a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c0d2e", peerId: "12D3KooWJEfH4MB6MyYMUzzhPDKg3cLQlhh3BQGXF1qHpN2VE8TK", identity: "Turboflakes", multiaddresses: ["/dns4/ibp-boot-polkadot.turboflakes.io/tcp/30333"], reachable: false },
-    { key: "0xee5f7a9b1c3d5e7f9a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e3f", peerId: "12D3KooWGhXQJFE1LvGkFJfWMSCj8BkRg4k8KzBPM1LSzfkDMwaa", identity: "LetzBake!", multiaddresses: ["/ip4/138.201.142.60/tcp/30333", "/ip4/138.201.142.60/tcp/443/wss"], reachable: true },
+    { key: "0x9a1e4f5c8d2b3e7a6f0c1d4e5b8a9f2c3d6e7f8a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWRkGLz4YbVmrsWK75VjFTs8NvaBu42xhAmQaP4QLJpKvG", identity: "Parity Technologies", multiaddresses: [{addr: "/dns4/polkadot-validator-0.parity.io/tcp/30333", reachable: true}, {addr: "/ip4/34.90.151.124/tcp/30333/ws", reachable: true}], reachable: true },
+    { key: "0x2b6e3f8a1c4d7e9f0a5b8c2d3e6f1a4b7c0d9e8f5a2b3c4d1e6f7a8b9c0d1e2", peerId: "12D3KooWDgtynm4S9M3m6ZZhXYu2RrSKLgpkVFtLGZhVnkiQRya2", identity: "Web3 Foundation", multiaddresses: [{addr: "/dns4/w3f-validator.web3.foundation/tcp/30333", reachable: true}, {addr: "/ip4/52.28.196.84/tcp/30333", reachable: false}], reachable: true },
+    { key: "0x7f4e2a8b1c3d5f6e9a0b2c4d6e8f1a3b5c7d9e0f2a4b6c8d0e1f3a5b7c9d0e1", peerId: "12D3KooWCVhY4PEgkLSMQ3jKvJwNSTctaYMwiAMfnaRnMnCAxkzz", identity: "Stakeworld", multiaddresses: [{addr: "/ip4/65.108.13.29/tcp/30333", reachable: false}], reachable: false },
+    { key: "0xaa3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e7f9a0b", peerId: "12D3KooWP2VsPJHL9RBJkFHTiyQfSqjE8DWz7tPqqZnGPAaV2d6a", identity: "Zug Capital", multiaddresses: [{addr: "/dns4/polkadot.zug-capital.com/tcp/30333", reachable: true}, {addr: "/ip4/144.76.97.120/tcp/30333", reachable: true}, {addr: "/ip4/144.76.97.120/tcp/443/wss", reachable: false}], reachable: true },
+    { key: "0xcc1d3e5f7a9b1c3d5e7f9a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d", peerId: "12D3KooWFN2mhgpkJsDBuNR6BUZMEfRqvDDASMqSnLiR2pJCFDeh", identity: "Polkadot.pro - Pair 1", multiaddresses: [{addr: "/ip4/5.9.106.214/tcp/30333", reachable: true}], reachable: true },
+    { key: "0xdd4e6f8a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c0d2e", peerId: "12D3KooWJEfH4MB6MyYMUzzhPDKg3cLQlhh3BQGXF1qHpN2VE8TK", identity: "Turboflakes", multiaddresses: [{addr: "/dns4/ibp-boot-polkadot.turboflakes.io/tcp/30333", reachable: false}], reachable: false },
+    { key: "0xee5f7a9b1c3d5e7f9a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e3f", peerId: "12D3KooWGhXQJFE1LvGkFJfWMSCj8BkRg4k8KzBPM1LSzfkDMwaa", identity: "LetzBake!", multiaddresses: [{addr: "/ip4/138.201.142.60/tcp/30333", reachable: true}, {addr: "/ip4/138.201.142.60/tcp/443/wss", reachable: false}], reachable: true },
   ],
   Kusama: [
-    { key: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b", peerId: "12D3KooWSAiwYL2TjQxoapYtbjiRHrefXUBGRv1KHoAz3RBmGzPz", identity: "Parity Kusama", multiaddresses: ["/dns4/kusama-bootnode-0.parity.io/tcp/30333"], reachable: true },
-    { key: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d", peerId: "12D3KooWR1hSbKDmKEaLY1gCBUfaSyndMKRaFrVwKYDvhH8CjTYh", identity: "KSMCC3 Validator", multiaddresses: ["/ip4/51.15.218.199/tcp/30333"], reachable: false },
-    { key: "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f", peerId: "12D3KooWMkvqfNpVTsgj5AxEcBMPRfYXK6Li1JRbNH3WRg9KJLZx", identity: "Ryabina", multiaddresses: ["/dns4/kusama.ryabina.io/tcp/30333", "/ip4/95.216.218.234/tcp/30333"], reachable: true },
-    { key: "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b", peerId: "12D3KooWPjceQrSwdWXPyLLeABRXmuqt69Rg3sBYbU1Nft9HyQ6X", identity: "DragonStake", multiaddresses: ["/ip4/135.181.55.30/tcp/30333"], reachable: true },
-    { key: "0x9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d", peerId: "12D3KooWEyoppNCUVQjqYnJRGoUPGgKRsHnDV4iWjpBHWmyC6D55", identity: "Stake Plus", multiaddresses: ["/dns4/ksm.stakeplus.io/tcp/30333", "/ip4/176.9.48.131/tcp/30333", "/ip4/176.9.48.131/tcp/443/wss"], reachable: false },
+    { key: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b", peerId: "12D3KooWSAiwYL2TjQxoapYtbjiRHrefXUBGRv1KHoAz3RBmGzPz", identity: "Parity Kusama", multiaddresses: [{addr: "/dns4/kusama-bootnode-0.parity.io/tcp/30333", reachable: true}], reachable: true },
+    { key: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d", peerId: "12D3KooWR1hSbKDmKEaLY1gCBUfaSyndMKRaFrVwKYDvhH8CjTYh", identity: "KSMCC3 Validator", multiaddresses: [{addr: "/ip4/51.15.218.199/tcp/30333", reachable: false}], reachable: false },
+    { key: "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f", peerId: "12D3KooWMkvqfNpVTsgj5AxEcBMPRfYXK6Li1JRbNH3WRg9KJLZx", identity: "Ryabina", multiaddresses: [{addr: "/dns4/kusama.ryabina.io/tcp/30333", reachable: true}, {addr: "/ip4/95.216.218.234/tcp/30333", reachable: true}], reachable: true },
+    { key: "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b", peerId: "12D3KooWPjceQrSwdWXPyLLeABRXmuqt69Rg3sBYbU1Nft9HyQ6X", identity: "DragonStake", multiaddresses: [{addr: "/ip4/135.181.55.30/tcp/30333", reachable: true}], reachable: true },
+    { key: "0x9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d", peerId: "12D3KooWEyoppNCUVQjqYnJRGoUPGgKRsHnDV4iWjpBHWmyC6D55", identity: "Stake Plus", multiaddresses: [{addr: "/dns4/ksm.stakeplus.io/tcp/30333", reachable: false}, {addr: "/ip4/176.9.48.131/tcp/30333", reachable: false}, {addr: "/ip4/176.9.48.131/tcp/443/wss", reachable: false}], reachable: false },
   ],
   Paseo: [
-    { key: "0xab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c", peerId: "12D3KooWKszYDB7mCvk1VkEL9MCHW8qqGaHbLko8SXjDY1R7HZhN", identity: "Amforc Paseo", multiaddresses: ["/dns4/paseo.amforc.com/tcp/30333"], reachable: true },
-    { key: "0xcd3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e", peerId: "12D3KooWHVycWaZRd8qMNnEbEuasHjBJxFJPCKam42ABxjJmKR7G", identity: "Metaspan", multiaddresses: ["/ip4/65.109.117.227/tcp/31333"], reachable: true },
-    { key: "0xef5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a", peerId: "12D3KooWFJ4V3bNBSz9c3aXTQrHRZW5E3bPksGZKLCZ6gxFh92br", identity: "Helikon", multiaddresses: ["/dns4/paseo-rpc.helikon.io/tcp/30333", "/ip4/95.217.13.48/tcp/30333"], reachable: false },
-    { key: "0x016b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b", peerId: "12D3KooWCU7kBq1u3NVTTJt1FtLqjnhFEmBn8KJDvbxbGDAqjZjb", identity: "IBP Paseo Boot", multiaddresses: ["/ip4/209.126.85.64/tcp/30333"], reachable: true },
+    { key: "0xab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c", peerId: "12D3KooWKszYDB7mCvk1VkEL9MCHW8qqGaHbLko8SXjDY1R7HZhN", identity: "Amforc Paseo", multiaddresses: [{addr: "/dns4/paseo.amforc.com/tcp/30333", reachable: true}], reachable: true },
+    { key: "0xcd3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e", peerId: "12D3KooWHVycWaZRd8qMNnEbEuasHjBJxFJPCKam42ABxjJmKR7G", identity: "Metaspan", multiaddresses: [{addr: "/ip4/65.109.117.227/tcp/31333", reachable: true}], reachable: true },
+    { key: "0xef5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a", peerId: "12D3KooWFJ4V3bNBSz9c3aXTQrHRZW5E3bPksGZKLCZ6gxFh92br", identity: "Helikon", multiaddresses: [{addr: "/dns4/paseo-rpc.helikon.io/tcp/30333", reachable: false}, {addr: "/ip4/95.217.13.48/tcp/30333", reachable: false}], reachable: false },
+    { key: "0x016b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b", peerId: "12D3KooWCU7kBq1u3NVTTJt1FtLqjnhFEmBn8KJDvbxbGDAqjZjb", identity: "IBP Paseo Boot", multiaddresses: [{addr: "/ip4/209.126.85.64/tcp/30333", reachable: true}], reachable: true },
   ],
   Westend: [
-    { key: "0x127c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c", peerId: "12D3KooWLKMR2oAbk9oCiLEVbWAFn1LxgM5pBWLj3g8JFa6qRYkG", identity: "Parity Westend", multiaddresses: ["/dns4/westend-bootnode-0.parity.io/tcp/30333"], reachable: true },
-    { key: "0x348d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d", peerId: "12D3KooWGRwHJpNRLzYP7MCpRhNyi2n4ikd7TpyR7C1GMwtGrNkd", identity: "Web3 Westend", multiaddresses: ["/ip4/34.90.117.160/tcp/30333", "/ip4/34.90.117.160/tcp/443/wss"], reachable: true },
-    { key: "0x569e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e", peerId: "12D3KooWAXz9AXQHTRKd3K4SBaN5VpQcBqoFvjBJTmFRPDh6AHAG", identity: "DotStaked WND", multiaddresses: ["/ip4/178.63.86.50/tcp/30333"], reachable: false },
-    { key: "0x78af1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWPHfJBJTiFMBRDEgW5ol4q5khLtAvaYWS9HPH8sdLVENm", identity: "Turboflakes WND", multiaddresses: ["/dns4/westend-boot.turboflakes.io/tcp/30333", "/ip4/65.108.69.50/tcp/30333"], reachable: true },
-    { key: "0x9a0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWE4jH9Lxj8SPT4dTQf6mRxjPrFDKGmSBEjk4BQLv7HXLQ", identity: "Stakeworld WND", multiaddresses: ["/ip4/65.108.13.29/tcp/30533"], reachable: false },
-    { key: "0xbc1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a", peerId: "12D3KooWDNVorJHsRRztQC3mJJWaYnkPBRnGtLG9yTqkXABQBrEC", identity: "LetzBake! WND", multiaddresses: ["/ip4/138.201.142.60/tcp/30533", "/ip4/138.201.142.60/tcp/30534/ws"], reachable: true },
+    { key: "0x127c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c", peerId: "12D3KooWLKMR2oAbk9oCiLEVbWAFn1LxgM5pBWLj3g8JFa6qRYkG", identity: "Parity Westend", multiaddresses: [{addr: "/dns4/westend-bootnode-0.parity.io/tcp/30333", reachable: true}], reachable: true },
+    { key: "0x348d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d", peerId: "12D3KooWGRwHJpNRLzYP7MCpRhNyi2n4ikd7TpyR7C1GMwtGrNkd", identity: "Web3 Westend", multiaddresses: [{addr: "/ip4/34.90.117.160/tcp/30333", reachable: true}, {addr: "/ip4/34.90.117.160/tcp/443/wss", reachable: false}], reachable: true },
+    { key: "0x569e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e", peerId: "12D3KooWAXz9AXQHTRKd3K4SBaN5VpQcBqoFvjBJTmFRPDh6AHAG", identity: "DotStaked WND", multiaddresses: [{addr: "/ip4/178.63.86.50/tcp/30333", reachable: false}], reachable: false },
+    { key: "0x78af1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWPHfJBJTiFMBRDEgW5ol4q5khLtAvaYWS9HPH8sdLVENm", identity: "Turboflakes WND", multiaddresses: [{addr: "/dns4/westend-boot.turboflakes.io/tcp/30333", reachable: true}, {addr: "/ip4/65.108.69.50/tcp/30333", reachable: true}], reachable: true },
+    { key: "0x9a0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWE4jH9Lxj8SPT4dTQf6mRxjPrFDKGmSBEjk4BQLv7HXLQ", identity: "Stakeworld WND", multiaddresses: [{addr: "/ip4/65.108.13.29/tcp/30533", reachable: false}], reachable: false },
+    { key: "0xbc1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a", peerId: "12D3KooWDNVorJHsRRztQC3mJJWaYnkPBRnGtLG9yTqkXABQBrEC", identity: "LetzBake! WND", multiaddresses: [{addr: "/ip4/138.201.142.60/tcp/30533", reachable: true}, {addr: "/ip4/138.201.142.60/tcp/30534/ws", reachable: false}], reachable: true },
   ]
 };
 
@@ -400,7 +412,7 @@ function renderList() {
           <div class="field-label">Addresses</div>
           <div class="field-value">
             <div class="multiaddr-list">
-              ${v.multiaddresses.map(a => `<span class="multiaddr">${a}</span>`).join('')}
+              ${v.multiaddresses.map(a => `<span class="multiaddr ${a.reachable ? 'addr-online' : 'addr-offline'}"><span class="addr-dot ${a.reachable ? 'green' : 'red'}"></span>${a.addr}</span>`).join('')}
             </div>
           </div>
         </div>
