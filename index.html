@@ -243,6 +243,35 @@
   }
   .multiaddr.addr-online  { border-color: #00e67620 }
   .multiaddr.addr-offline { border-color: #ff525220 }
+  .addr-reason {
+    color: var(--red); opacity: .7; font-style: italic;
+  }
+  .addr-private {
+    color: var(--text-dim); font-style: italic; font-size: .7rem;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: .7rem; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 999px;
+  }
+  .badge.dht-yes {
+    background: #6366f115; color: #818cf8;
+  }
+  .badge.dht-no {
+    background: #ffffff08; color: var(--text-dim);
+  }
+
+  /* ── Stats detail row ── */
+  .stats-detail {
+    display: flex; justify-content: center; gap: 20px; margin-bottom: 24px;
+    flex-wrap: wrap; animation: fadeUp .8s cubic-bezier(.16,1,.3,1) .22s both;
+  }
+  .stats-detail .sd {
+    font-size: .78rem; color: var(--text-dim);
+  }
+  .stats-detail .sd strong { color: #b0b0c4; font-weight: 600; }
 
   /* ── Animations ── */
   @keyframes fadeUp {
@@ -288,6 +317,7 @@
   <nav class="tabs" id="tabs"></nav>
 
   <div class="stats" id="stats"></div>
+  <div class="stats-detail" id="stats-detail"></div>
 
   <div class="search-wrap">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -300,49 +330,70 @@
 </div>
 
 <script>
-// ── Mock Data ──
-const NETWORKS = {
-  Polkadot: [
-    { key: "0x9a1e4f5c8d2b3e7a6f0c1d4e5b8a9f2c3d6e7f8a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWRkGLz4YbVmrsWK75VjFTs8NvaBu42xhAmQaP4QLJpKvG", identity: "Parity Technologies", multiaddresses: [{addr: "/dns4/polkadot-validator-0.parity.io/tcp/30333", reachable: true}, {addr: "/ip4/34.90.151.124/tcp/30333/ws", reachable: true}], reachable: true },
-    { key: "0x2b6e3f8a1c4d7e9f0a5b8c2d3e6f1a4b7c0d9e8f5a2b3c4d1e6f7a8b9c0d1e2", peerId: "12D3KooWDgtynm4S9M3m6ZZhXYu2RrSKLgpkVFtLGZhVnkiQRya2", identity: "Web3 Foundation", multiaddresses: [{addr: "/dns4/w3f-validator.web3.foundation/tcp/30333", reachable: true}, {addr: "/ip4/52.28.196.84/tcp/30333", reachable: false}], reachable: true },
-    { key: "0x7f4e2a8b1c3d5f6e9a0b2c4d6e8f1a3b5c7d9e0f2a4b6c8d0e1f3a5b7c9d0e1", peerId: "12D3KooWCVhY4PEgkLSMQ3jKvJwNSTctaYMwiAMfnaRnMnCAxkzz", identity: "Stakeworld", multiaddresses: [{addr: "/ip4/65.108.13.29/tcp/30333", reachable: false}], reachable: false },
-    { key: "0xaa3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e7f9a0b", peerId: "12D3KooWP2VsPJHL9RBJkFHTiyQfSqjE8DWz7tPqqZnGPAaV2d6a", identity: "Zug Capital", multiaddresses: [{addr: "/dns4/polkadot.zug-capital.com/tcp/30333", reachable: true}, {addr: "/ip4/144.76.97.120/tcp/30333", reachable: true}, {addr: "/ip4/144.76.97.120/tcp/443/wss", reachable: false}], reachable: true },
-    { key: "0xcc1d3e5f7a9b1c3d5e7f9a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d", peerId: "12D3KooWFN2mhgpkJsDBuNR6BUZMEfRqvDDASMqSnLiR2pJCFDeh", identity: "Polkadot.pro - Pair 1", multiaddresses: [{addr: "/ip4/5.9.106.214/tcp/30333", reachable: true}], reachable: true },
-    { key: "0xdd4e6f8a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c0d2e", peerId: "12D3KooWJEfH4MB6MyYMUzzhPDKg3cLQlhh3BQGXF1qHpN2VE8TK", identity: "Turboflakes", multiaddresses: [{addr: "/dns4/ibp-boot-polkadot.turboflakes.io/tcp/30333", reachable: false}], reachable: false },
-    { key: "0xee5f7a9b1c3d5e7f9a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e3f", peerId: "12D3KooWGhXQJFE1LvGkFJfWMSCj8BkRg4k8KzBPM1LSzfkDMwaa", identity: "LetzBake!", multiaddresses: [{addr: "/ip4/138.201.142.60/tcp/30333", reachable: true}, {addr: "/ip4/138.201.142.60/tcp/443/wss", reachable: false}], reachable: true },
-  ],
-  Kusama: [
-    { key: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b", peerId: "12D3KooWSAiwYL2TjQxoapYtbjiRHrefXUBGRv1KHoAz3RBmGzPz", identity: "Parity Kusama", multiaddresses: [{addr: "/dns4/kusama-bootnode-0.parity.io/tcp/30333", reachable: true}], reachable: true },
-    { key: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d", peerId: "12D3KooWR1hSbKDmKEaLY1gCBUfaSyndMKRaFrVwKYDvhH8CjTYh", identity: "KSMCC3 Validator", multiaddresses: [{addr: "/ip4/51.15.218.199/tcp/30333", reachable: false}], reachable: false },
-    { key: "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f", peerId: "12D3KooWMkvqfNpVTsgj5AxEcBMPRfYXK6Li1JRbNH3WRg9KJLZx", identity: "Ryabina", multiaddresses: [{addr: "/dns4/kusama.ryabina.io/tcp/30333", reachable: true}, {addr: "/ip4/95.216.218.234/tcp/30333", reachable: true}], reachable: true },
-    { key: "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b", peerId: "12D3KooWPjceQrSwdWXPyLLeABRXmuqt69Rg3sBYbU1Nft9HyQ6X", identity: "DragonStake", multiaddresses: [{addr: "/ip4/135.181.55.30/tcp/30333", reachable: true}], reachable: true },
-    { key: "0x9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d", peerId: "12D3KooWEyoppNCUVQjqYnJRGoUPGgKRsHnDV4iWjpBHWmyC6D55", identity: "Stake Plus", multiaddresses: [{addr: "/dns4/ksm.stakeplus.io/tcp/30333", reachable: false}, {addr: "/ip4/176.9.48.131/tcp/30333", reachable: false}, {addr: "/ip4/176.9.48.131/tcp/443/wss", reachable: false}], reachable: false },
-  ],
-  Paseo: [
-    { key: "0xab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c", peerId: "12D3KooWKszYDB7mCvk1VkEL9MCHW8qqGaHbLko8SXjDY1R7HZhN", identity: "Amforc Paseo", multiaddresses: [{addr: "/dns4/paseo.amforc.com/tcp/30333", reachable: true}], reachable: true },
-    { key: "0xcd3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e", peerId: "12D3KooWHVycWaZRd8qMNnEbEuasHjBJxFJPCKam42ABxjJmKR7G", identity: "Metaspan", multiaddresses: [{addr: "/ip4/65.109.117.227/tcp/31333", reachable: true}], reachable: true },
-    { key: "0xef5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a", peerId: "12D3KooWFJ4V3bNBSz9c3aXTQrHRZW5E3bPksGZKLCZ6gxFh92br", identity: "Helikon", multiaddresses: [{addr: "/dns4/paseo-rpc.helikon.io/tcp/30333", reachable: false}, {addr: "/ip4/95.217.13.48/tcp/30333", reachable: false}], reachable: false },
-    { key: "0x016b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b", peerId: "12D3KooWCU7kBq1u3NVTTJt1FtLqjnhFEmBn8KJDvbxbGDAqjZjb", identity: "IBP Paseo Boot", multiaddresses: [{addr: "/ip4/209.126.85.64/tcp/30333", reachable: true}], reachable: true },
-  ],
-  Westend: [
-    { key: "0x127c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c", peerId: "12D3KooWLKMR2oAbk9oCiLEVbWAFn1LxgM5pBWLj3g8JFa6qRYkG", identity: "Parity Westend", multiaddresses: [{addr: "/dns4/westend-bootnode-0.parity.io/tcp/30333", reachable: true}], reachable: true },
-    { key: "0x348d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d", peerId: "12D3KooWGRwHJpNRLzYP7MCpRhNyi2n4ikd7TpyR7C1GMwtGrNkd", identity: "Web3 Westend", multiaddresses: [{addr: "/ip4/34.90.117.160/tcp/30333", reachable: true}, {addr: "/ip4/34.90.117.160/tcp/443/wss", reachable: false}], reachable: true },
-    { key: "0x569e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e", peerId: "12D3KooWAXz9AXQHTRKd3K4SBaN5VpQcBqoFvjBJTmFRPDh6AHAG", identity: "DotStaked WND", multiaddresses: [{addr: "/ip4/178.63.86.50/tcp/30333", reachable: false}], reachable: false },
-    { key: "0x78af1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWPHfJBJTiFMBRDEgW5ol4q5khLtAvaYWS9HPH8sdLVENm", identity: "Turboflakes WND", multiaddresses: [{addr: "/dns4/westend-boot.turboflakes.io/tcp/30333", reachable: true}, {addr: "/ip4/65.108.69.50/tcp/30333", reachable: true}], reachable: true },
-    { key: "0x9a0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f", peerId: "12D3KooWE4jH9Lxj8SPT4dTQf6mRxjPrFDKGmSBEjk4BQLv7HXLQ", identity: "Stakeworld WND", multiaddresses: [{addr: "/ip4/65.108.13.29/tcp/30533", reachable: false}], reachable: false },
-    { key: "0xbc1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a", peerId: "12D3KooWDNVorJHsRRztQC3mJJWaYnkPBRnGtLG9yTqkXABQBrEC", identity: "LetzBake! WND", multiaddresses: [{addr: "/ip4/138.201.142.60/tcp/30533", reachable: true}, {addr: "/ip4/138.201.142.60/tcp/30534/ws", reachable: false}], reachable: true },
-  ]
-};
-
 // ── State ──
-let activeNetwork = 'Polkadot';
+const NETWORKS = {};   // { chainName: { validators: [...], stats: {...}, rpcUrl: '' } }
+let activeNetwork = '';
 let searchQuery = '';
-let statusFilter = null; // null = all, 'online' = reachable first, 'offline' = unreachable first
+let statusFilter = null; // null = all, 'online' = reachable only, 'offline' = unreachable only
+
+// ── Load the list of result files from networks.json ──
+async function discoverJsonFiles() {
+  const res = await fetch('networks.json');
+  return await res.json();
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function transformAuthorities(authorities) {
+  return authorities.map(auth => ({
+    key: auth.authority_ss58,
+    peerId: auth.peer_id || '',
+    identity: auth.identity_name || '',
+    agentVersion: auth.agent_version || '',
+    hasDhtRecord: auth.has_dht_record,
+    multiaddresses: auth.addresses.map(a => ({
+      addr: a.address_short,
+      isPublic: a.is_public,
+      reachable: a.result?.status === 'Ok',
+      reason: a.result?.reason || ''
+    })),
+    reachable: auth.addresses.length > 0 && auth.addresses.some(a => a.result?.status === 'Ok')
+  }));
+}
+
+async function loadData() {
+  const files = await discoverJsonFiles();
+
+  const results = await Promise.allSettled(
+    files.map(f => fetch(f).then(r => r.json()))
+  );
+
+  for (let i = 0; i < files.length; i++) {
+    if (results[i].status !== 'fulfilled') continue;
+    const data = results[i].value;
+    // Skip files that don't look like results (must have chain + authorities)
+    if (!data.chain || !Array.isArray(data.authorities)) continue;
+    const name = capitalize(data.chain);
+    NETWORKS[name] = {
+      validators: transformAuthorities(data.authorities),
+      stats: data.stats || {},
+      rpcUrl: data.rpc_url || '',
+    };
+  }
+
+  const names = Object.keys(NETWORKS);
+  if (names.length) {
+    activeNetwork = names[0];
+  }
+  render();
+}
 
 // ── Render helpers ──
 function truncate(str, start = 8, end = 6) {
   if (str.length <= start + end + 3) return str;
-  return str.slice(0, start) + '…' + str.slice(-end);
+  return str.slice(0, start) + '\u2026' + str.slice(-end);
 }
 
 function renderTabs() {
@@ -353,32 +404,47 @@ function renderTabs() {
 }
 
 function renderStats() {
-  const validators = NETWORKS[activeNetwork];
+  const net = NETWORKS[activeNetwork];
+  if (!net) return;
+  const s = net.stats;
+  const validators = net.validators;
   const online = validators.filter(v => v.reachable).length;
   const offline = validators.length - online;
+
   document.getElementById('stats').innerHTML = `
     <div class="stat${statusFilter === null ? ' active' : ''}" data-filter="all"><strong>${validators.length}</strong> all</div>
     <div class="stat${statusFilter === 'online' ? ' active' : ''}" data-filter="online"><div class="dot green"></div><strong>${online}</strong> reachable</div>
     <div class="stat${statusFilter === 'offline' ? ' active' : ''}" data-filter="offline"><div class="dot red"></div><strong>${offline}</strong> unreachable</div>
   `;
+
+  // Detailed stats row from the JSON stats object
+  const parts = [];
+  if (s.with_dht_records != null) parts.push(`<span class="sd"><strong>${s.with_dht_records}</strong> DHT records</span>`);
+  if (s.identified != null) parts.push(`<span class="sd"><strong>${s.identified}</strong> identified</span>`);
+  if (s.total_addresses != null) parts.push(`<span class="sd"><strong>${s.reachable_public}</strong>/<strong>${s.total_addresses}</strong> addrs reachable</span>`);
+  if (s.fully_reachable_authorities != null) parts.push(`<span class="sd"><strong>${s.fully_reachable_authorities}</strong> fully reachable</span>`);
+  document.getElementById('stats-detail').innerHTML = parts.join('');
 }
 
 function renderList() {
   const container = document.getElementById('list');
-  const validators = NETWORKS[activeNetwork];
+  const net = NETWORKS[activeNetwork];
+  if (!net) { container.innerHTML = ''; return; }
+  const validators = net.validators;
   const q = searchQuery.toLowerCase();
 
   let filtered = validators.filter(v =>
     !q ||
     v.identity.toLowerCase().includes(q) ||
     v.key.toLowerCase().includes(q) ||
-    v.peerId.toLowerCase().includes(q)
+    v.peerId.toLowerCase().includes(q) ||
+    v.agentVersion.toLowerCase().includes(q)
   );
 
   if (statusFilter === 'offline') {
-    filtered = [...filtered].sort((a, b) => a.reachable - b.reachable);
+    filtered = filtered.filter(v => !v.reachable);
   } else if (statusFilter === 'online') {
-    filtered = [...filtered].sort((a, b) => b.reachable - a.reachable);
+    filtered = filtered.filter(v => v.reachable);
   }
 
   if (!filtered.length) {
@@ -396,26 +462,38 @@ function renderList() {
     <div class="card" style="animation-delay: ${i * .06}s">
       <div class="card-top">
         <div class="status-bubble ${v.reachable ? 'online' : 'offline'}"></div>
-        <div class="identity">${v.identity}</div>
+        <div class="identity">${v.identity || truncate(v.key)}</div>
+        <span class="badge ${v.hasDhtRecord ? 'dht-yes' : 'dht-no'}">${v.hasDhtRecord ? 'DHT' : 'No DHT'}</span>
         <div class="status-label ${v.reachable ? 'online' : 'offline'}">${v.reachable ? 'Reachable' : 'Unreachable'}</div>
       </div>
       <div class="fields">
         <div class="field">
-          <div class="field-label">Key</div>
+          <div class="field-label">Authority</div>
           <div class="field-value">${v.key}</div>
         </div>
-        <div class="field">
+        ${v.peerId ? `<div class="field">
           <div class="field-label">Peer ID</div>
           <div class="field-value">${v.peerId}</div>
-        </div>
-        <div class="field">
+        </div>` : ''}
+        ${v.agentVersion ? `<div class="field">
+          <div class="field-label">Agent</div>
+          <div class="field-value">${v.agentVersion}</div>
+        </div>` : ''}
+        ${v.multiaddresses.length ? `<div class="field">
           <div class="field-label">Addresses</div>
           <div class="field-value">
             <div class="multiaddr-list">
-              ${v.multiaddresses.map(a => `<span class="multiaddr ${a.reachable ? 'addr-online' : 'addr-offline'}"><span class="addr-dot ${a.reachable ? 'green' : 'red'}"></span>${a.addr}</span>`).join('')}
+              ${v.multiaddresses.map(a =>
+                `<span class="multiaddr ${a.reachable ? 'addr-online' : 'addr-offline'}">`
+                + `<span class="addr-dot ${a.reachable ? 'green' : 'red'}"></span>`
+                + `${a.addr}`
+                + (!a.isPublic ? ` <span class="addr-private">(private)</span>` : '')
+                + (a.reason ? ` <span class="addr-reason">\u2014 ${a.reason}</span>` : '')
+                + `</span>`
+              ).join('')}
             </div>
           </div>
-        </div>
+        </div>` : ''}
       </div>
     </div>
   `).join('');
@@ -432,6 +510,7 @@ document.getElementById('tabs').addEventListener('click', e => {
   const tab = e.target.closest('.tab');
   if (!tab) return;
   activeNetwork = tab.dataset.network;
+  statusFilter = null;
   render();
 });
 
@@ -452,7 +531,7 @@ document.getElementById('search').addEventListener('input', e => {
 });
 
 // ── Init ──
-render();
+loadData();
 </script>
 </body>
 </html>
