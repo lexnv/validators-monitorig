@@ -283,16 +283,18 @@ async function init() {
   try {
     const res = await fetch('networks.json');
     const files = await res.json();
-    const results = await Promise.allSettled(files.map(f => fetch(f).then(r => r.json())));
+    const results = await Promise.allSettled(files.map(f =>
+      fetch(f).then(r => r.json().then(data => ({ data, lastModified: r.headers.get('Last-Modified') })))
+    ));
 
     results.forEach((res, idx) => {
-      if (res.status === 'fulfilled' && res.value.chain) {
-        const data = res.value;
+      if (res.status === 'fulfilled' && res.value.data.chain) {
+        const { data, lastModified } = res.value;
         const name = data.chain.toUpperCase();
         state.networks[name] = {
           validators: processValidators(data.authorities),
           stats: data.stats || {},
-          timestamp: data.timestamp || new Date().toISOString(),
+          timestamp: data.timestamp || lastModified || new Date().toISOString(),
           raw: data
         };
       }
