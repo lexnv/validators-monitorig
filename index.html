@@ -77,6 +77,7 @@
     background-clip: text;
   }
   .header p { color: var(--text-dim); font-size: .95rem; margin-top: 6px; }
+  .header .snapshot { font-size: .8rem; opacity: .6; margin-top: 8px; }
 
   /* ── Tabs ── */
   .tabs {
@@ -325,8 +326,9 @@
 
 <div class="app">
   <header class="header">
-    <h1>Validator Monitor</h1>
-    <p>Real-time substrate validator reachability</p>
+    <h1>Validator Monitor Pro</h1>
+    <p>Substrate network reachability and health insights</p>
+    <p class="snapshot" id="snapshot"></p>
   </header>
 
   <nav class="tabs" id="tabs"></nav>
@@ -382,12 +384,15 @@ async function loadData() {
   const files = await discoverJsonFiles();
 
   const results = await Promise.allSettled(
-    files.map(f => fetch(f).then(r => r.json()))
+    files.map(f => fetch(f).then(r => {
+      const lastMod = r.headers.get('Last-Modified');
+      return r.json().then(json => ({ json, lastMod }));
+    }))
   );
 
   for (let i = 0; i < files.length; i++) {
     if (results[i].status !== 'fulfilled') continue;
-    const data = results[i].value;
+    const { json: data, lastMod } = results[i].value;
     // Skip files that don't look like results (must have chain + authorities)
     if (!data.chain || !Array.isArray(data.authorities)) continue;
     const name = capitalize(data.chain);
@@ -397,6 +402,7 @@ async function loadData() {
       rpcUrl: data.rpc_url || '',
       rawJson: data,
       filename: files[i],
+      snapshotTime: lastMod ? new Date(lastMod) : null,
     };
   }
 
@@ -517,8 +523,20 @@ function renderList() {
   `).join('');
 }
 
+function renderSnapshot() {
+  const net = NETWORKS[activeNetwork];
+  const el = document.getElementById('snapshot');
+  if (!net || !net.snapshotTime) { el.textContent = ''; return; }
+  const t = net.snapshotTime;
+  const pad = n => String(n).padStart(2, '0');
+  const date = `${pad(t.getDate())}/${pad(t.getMonth() + 1)}/${t.getFullYear()}`;
+  const time = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+  el.textContent = `Snapshot taken: ${date}, ${time}`;
+}
+
 function render() {
   renderTabs();
+  renderSnapshot();
   renderStats();
   renderList();
 }
