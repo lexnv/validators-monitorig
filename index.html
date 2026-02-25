@@ -208,19 +208,13 @@
   }
   #toast.show { transform: translateX(0); }
 
+  .header-meta {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-top: 10px;
+  }
   .last-updated {
-    text-align: right; color: var(--text-dim); font-size: 0.65rem; font-family: var(--font-mono);
-    margin-top: 10px; opacity: 0.6;
+    color: var(--text-dim); font-size: 0.65rem; font-family: var(--font-mono); opacity: 0.6;
   }
 
-  .footer {
-    margin-top: 48px; padding: 24px 0; border-top: 1px dashed rgba(255,255,255,0.06);
-    text-align: center; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
-  }
-  .footer a {
-    color: var(--accent); text-decoration: none; font-weight: 700; transition: 0.2s;
-  }
-  .footer a:hover { text-decoration: underline; filter: brightness(1.3); }
 </style>
 </head>
 <body>
@@ -233,7 +227,10 @@
   <header class="header">
     <div class="sys-status">System Node Monitoring // Live Feedback</div>
     <h1>Validator Monitor <span style="color:var(--accent)">Pro</span></h1>
-    <div id="update-ts" class="last-updated"></div>
+    <div class="header-meta">
+      <div id="update-ts" class="last-updated"></div>
+      <div class="last-updated">POWERED_BY: <a href="https://github.com/lexnv/subp2p-explorer" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:700">subp2p-explorer</a></div>
+    </div>
   </header>
 
   <div class="controls-row">
@@ -259,10 +256,6 @@
   <div class="stats-grid" id="stats-summary"></div>
 
   <div id="list" class="list-container"></div>
-
-  <footer class="footer">
-    Powered by <a href="https://github.com/lexnv/subp2p-explorer" target="_blank" rel="noopener noreferrer">subp2p-explorer</a>
-  </footer>
 </div>
 
 <div id="toast">DATA_COPIED_TO_CLIPBOARD</div>
