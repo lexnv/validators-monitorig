@@ -119,14 +119,23 @@
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
   .stat-card {
     background: var(--surface); border: 1px solid var(--border); padding: 20px;
-    position: relative; transition: 0.3s; overflow: hidden;
+    position: relative; transition: 0.3s; overflow: hidden; cursor: pointer;
   }
   .stat-card::before {
     content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
     background: var(--text-dim); opacity: 0.3;
   }
+  .stat-card:hover { border-color: var(--accent); }
   .stat-card.active { border-color: var(--accent); background: rgba(230, 0, 122, 0.05); }
   .stat-card.active::before { background: var(--accent); opacity: 1; }
+
+  .stat-card.info {
+    cursor: default; background: transparent; border-style: dashed; border-color: rgba(255,255,255,0.06);
+  }
+  .stat-card.info::before { background: var(--text-dim); opacity: 0.15; }
+  .stat-card.info:hover { border-color: rgba(255,255,255,0.06); }
+  .stat-card.info .stat-value { font-size: 1.5rem; font-weight: 600; opacity: 0.7; }
+  .stat-card.info .stat-label { opacity: 0.5; }
   
   .stat-label { color: var(--text-dim); font-size: 0.65rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; }
   .stat-value { font-size: 2rem; font-weight: 800; font-family: var(--font-mono); }
@@ -324,8 +333,9 @@ function render() {
 
   // Render Stats
   const v = net.validators;
+  const s = net.stats;
   const online = v.filter(i => i.isOnline).length;
-  document.getElementById('stats-summary').innerHTML = `
+  let statsHtml = `
     <div class="stat-card ${state.statusFilter === 'all' ? 'active' : ''}" onclick="setStatusFilter('all')">
       <div class="stat-label">Total Nodes</div>
       <div class="stat-value">${v.length}</div>
@@ -339,6 +349,27 @@ function render() {
       <div class="stat-value" style="color:var(--red)">${v.length - online}</div>
     </div>
   `;
+  if (s.with_dht_records != null) statsHtml += `
+    <div class="stat-card info">
+      <div class="stat-label">DHT Records</div>
+      <div class="stat-value">${s.with_dht_records}</div>
+    </div>`;
+  if (s.identified != null) statsHtml += `
+    <div class="stat-card info">
+      <div class="stat-label">Identified</div>
+      <div class="stat-value">${s.identified}</div>
+    </div>`;
+  if (s.total_addresses != null) statsHtml += `
+    <div class="stat-card info">
+      <div class="stat-label">Addrs Reachable</div>
+      <div class="stat-value">${s.reachable_public}<span style="font-size:1rem;color:var(--text-dim)">/${s.total_addresses}</span></div>
+    </div>`;
+  if (s.fully_reachable_authorities != null) statsHtml += `
+    <div class="stat-card info">
+      <div class="stat-label">Fully Reachable</div>
+      <div class="stat-value" style="color:var(--green)">${s.fully_reachable_authorities}</div>
+    </div>`;
+  document.getElementById('stats-summary').innerHTML = statsHtml;
 
   document.getElementById('update-ts').textContent = `LAST_SYNC: ${new Date(net.timestamp).toLocaleString()}`;
   renderList();
@@ -349,7 +380,7 @@ function renderList() {
   const container = document.getElementById('list');
   let filtered = net.validators.filter(v => {
     const q = state.searchQuery.toLowerCase();
-    const matchSearch = !q || v.identity.toLowerCase().includes(q) || v.key.toLowerCase().includes(q) || v.peerId.toLowerCase().includes(q);
+    const matchSearch = !q || v.identity.toLowerCase().includes(q) || v.key.toLowerCase().includes(q) || v.peerId.toLowerCase().includes(q) || v.agent.toLowerCase().includes(q) || v.addresses.some(a => a.full.toLowerCase().includes(q));
     const matchFilter = state.statusFilter === 'all' || (state.statusFilter === 'online' ? v.isOnline : !v.isOnline);
     return matchSearch && matchFilter;
   });
@@ -383,6 +414,13 @@ function renderList() {
             ${v.peerId ? `<button class="action-btn" style="padding:4px" onclick="copy('${v.peerId}')">${ICON_COPY}</button>` : ''}
           </div>
         </div>
+
+        ${v.agent && v.agent !== 'Unknown' ? `<div class="field">
+          <span class="field-label">Agent_Version</span>
+          <div class="field-value-wrap">
+            <span class="field-value">${v.agent}</span>
+          </div>
+        </div>` : ''}
 
         <div class="field">
           <span class="field-label">Advertised_Endpoints [${v.addresses.length}]</span>
