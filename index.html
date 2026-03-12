@@ -274,10 +274,11 @@ const ICON_COPY = `<svg width="12" height="12" fill="none" stroke="currentColor"
 
 async function init() {
   try {
-    const res = await fetch('networks.json');
+    const cacheBust = `?t=${Date.now()}`;
+    const res = await fetch('networks.json' + cacheBust);
     const files = await res.json();
     const results = await Promise.allSettled(files.map(f =>
-      fetch(f).then(r => r.json().then(data => ({ data, lastModified: r.headers.get('Last-Modified') })))
+      fetch(f + cacheBust).then(r => r.json().then(data => ({ data, lastModified: r.headers.get('Last-Modified') })))
     ));
 
     results.forEach((res, idx) => {
