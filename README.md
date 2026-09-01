@@ -35,6 +35,10 @@ Seamlessly switch between major ecosystem networks to monitor specific validator
 
 - Version Distribution: Bar chart of agent versions across the validator set, including an "unidentified" bucket for nodes that never responded to identify. Click a version to filter the validator list to nodes running that release.
 
+- Transport Distribution: Bar chart of how many validators are running TCP, WebSocket and WebRTC (plus QUIC when present), derived from both the DHT records and the addresses each node reports over the identify protocol. Click a transport to filter the validator list.
+
+- Identify Endpoints: Each validator card lists the addresses the node reported about itself during the identify handshake, alongside the DHT-advertised endpoints.
+
 - Portability: Export raw JSON reports for any network for offline analysis or custom tooling.
 
 ## Architecture

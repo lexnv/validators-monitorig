@@ -278,6 +278,8 @@
 
   <div id="version-dist"></div>
 
+  <div id="transport-dist"></div>
+
   <div id="list" class="list-container"></div>
 </div>
 
@@ -290,6 +292,7 @@ const state = {
   searchQuery: '',
   statusFilter: 'all',
   versionFilter: null,
+  transportFilter: null,
   viewMode: 'full',
   sortBy: 'status'
 };
@@ -345,6 +348,17 @@ function parseAgent(agent) {
   return { client, version: m ? 'v' + m[1] : agent.split('(')[0].trim() };
 }
 
+function classifyTransport(addr) {
+  // WebSocket addresses also carry a /tcp component, so match the more
+  // specific protocols first. Multiaddrs with a path serialize the websocket
+  // part as /x-parity-ws or /x-parity-wss.
+  if (/\/(x-parity-)?wss?(\/|$)/.test(addr)) return 'WebSocket';
+  if (/\/webrtc(-direct)?(\/|$)/.test(addr)) return 'WebRTC';
+  if (/\/quic(-v1)?(\/|$)/.test(addr)) return 'QUIC';
+  if (/\/tcp\/\d+/.test(addr)) return 'TCP';
+  return null;
+}
+
 function processValidators(authorities) {
   const list = authorities.map(auth => {
     const addresses = (auth.addresses || []).map(a => {
@@ -361,6 +375,13 @@ function processValidators(authorities) {
         reason: (a.dial_outcome?.reason || a.result?.reason || '').replace(/"/g, '&quot;')
       };
     });
+    // Addresses the node reported about itself over the identify protocol.
+    const identifyAddresses = auth.identify_addresses || [];
+    // Transports across everything the node advertises (DHT + identify).
+    const transports = [...new Set(
+      [...addresses.map(a => a.full), ...identifyAddresses]
+        .map(classifyTransport).filter(Boolean)
+    )];
     return {
       key: auth.authority_ss58,
       peerId: auth.peer_id || '',
@@ -369,6 +390,8 @@ function processValidators(authorities) {
       ...parseAgent(auth.agent_version),
       hasDht: auth.has_dht_record,
       addresses,
+      identifyAddresses,
+      transports,
       // An identified peer was necessarily connected, even via an address
       // we never probed ourselves (subp2p-explorer#16).
       isOnline: !!auth.agent_version || addresses.some(a => a.isOk)
@@ -461,8 +484,33 @@ function render() {
   document.getElementById('stats-summary').innerHTML = statsHtml;
 
   renderVersionDist(v);
+  renderTransportDist(v);
   document.getElementById('update-ts').textContent = `LAST_SYNC: ${new Date(net.timestamp).toLocaleString()}`;
   renderList();
+}
+
+function renderTransportDist(validators) {
+  // Always show the three transports of interest; QUIC only when present.
+  // A validator can run several transports, so rows do not sum to 100%.
+  const order = ['TCP', 'WebSocket', 'WebRTC', 'QUIC'];
+  const rows = order
+    .map(key => ({ key, count: validators.filter(v => v.transports.includes(key)).length }))
+    .filter(r => r.key !== 'QUIC' || r.count > 0);
+
+  const maxCount = Math.max(...rows.map(r => r.count), 1);
+  document.getElementById('transport-dist').innerHTML = validators.length ? `
+    <div class="version-panel">
+      <div class="panel-title">Transport_Distribution ${state.transportFilter ? '<span class="filter-flag">// FILTER_ACTIVE [CLICK_ROW_TO_CLEAR]</span>' : '// VALIDATORS_PER_TRANSPORT (DHT + IDENTIFY)'}</div>
+      ${rows.map((row, i) => {
+        const share = (row.count / validators.length * 100).toFixed(1);
+        return `
+        <div class="version-row ${state.transportFilter === row.key ? 'active' : ''}" onclick="setTransportFilter('${row.key}')" title="${row.key}: ${row.count} of ${validators.length} validators (${share}%)">
+          <span class="version-name">${row.key}</span>
+          <div class="version-track"><div class="version-fill ${row.count === 0 ? 'unknown' : ''}" style="width:${(row.count / maxCount * 100).toFixed(1)}%; animation-delay:${i * 0.04}s"></div></div>
+          <span class="version-count">${row.count} <span class="pct">/ ${share}%</span></span>
+        </div>`;
+      }).join('')}
+    </div>` : '';
 }
 
 function renderVersionDist(validators) {
@@ -499,10 +547,11 @@ function renderList() {
   const container = document.getElementById('list');
   let filtered = net.validators.filter(v => {
     const q = state.searchQuery.toLowerCase();
-    const matchSearch = !q || v.identity.toLowerCase().includes(q) || v.key.toLowerCase().includes(q) || v.peerId.toLowerCase().includes(q) || v.agent.toLowerCase().includes(q) || v.addresses.some(a => a.full.toLowerCase().includes(q));
+    const matchSearch = !q || v.identity.toLowerCase().includes(q) || v.key.toLowerCase().includes(q) || v.peerId.toLowerCase().includes(q) || v.agent.toLowerCase().includes(q) || v.addresses.some(a => a.full.toLowerCase().includes(q)) || v.identifyAddresses.some(a => a.toLowerCase().includes(q));
     const matchFilter = state.statusFilter === 'all' || (state.statusFilter === 'online' ? v.isOnline : !v.isOnline);
     const matchVersion = !state.versionFilter || v.versionKey === state.versionFilter;
-    return matchSearch && matchFilter && matchVersion;
+    const matchTransport = !state.transportFilter || v.transports.includes(state.transportFilter);
+    return matchSearch && matchFilter && matchVersion && matchTransport;
   });
 
   filtered.sort((a, b) => {
@@ -515,6 +564,7 @@ function renderList() {
       <div class="card-header">
         <div class="pulse ${v.isOnline ? 'online' : 'offline'}"></div>
         <div class="identity-name">${v.identity || shorten(v.key, 12)}</div>
+        ${v.transports.map(t => `<div class="badge">${t}</div>`).join('')}
         <div class="badge">${v.hasDht ? 'DHT: OK' : 'DHT: NONE'}</div>
       </div>
       
@@ -553,13 +603,29 @@ function renderList() {
             `).join('')}
           </div>
         </div>
+
+        ${v.identifyAddresses.length ? `<div class="field">
+          <span class="field-label">Identify_Endpoints [${v.identifyAddresses.length}]${v.transports.length ? ` // ${v.transports.join(' + ')}` : ''}</span>
+          <div class="addr-grid" style="display:flex; flex-wrap:wrap; gap:8px;">
+            ${v.identifyAddresses.map(a => `
+              <div class="addr-chip">
+                <span>${esc(a)}</span>
+                <button class="action-btn" style="padding:2px; border:none;" onclick="copy('${esc(a)}')">${ICON_COPY}</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
       </div>
     </div>
   `).join('');
 }
 
-window.switchNetwork = (n) => { state.activeNetwork = n; state.versionFilter = null; render(); };
+window.switchNetwork = (n) => { state.activeNetwork = n; state.versionFilter = null; state.transportFilter = null; render(); };
 window.setStatusFilter = (f) => { state.statusFilter = f; render(); };
+window.setTransportFilter = (key) => {
+  state.transportFilter = state.transportFilter === key ? null : key;
+  render();
+};
 window.setVersionFilter = (i) => {
   const key = state._versions?.[i]?.key;
   state.versionFilter = state.versionFilter === key ? null : key;
