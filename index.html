@@ -198,6 +198,7 @@
   }
   .addr-chip.ok { border-left: 2px solid var(--green); }
   .addr-chip.fail { border-left: 2px solid var(--red); opacity: 0.6; }
+  .addr-chip.skip { border-left: 2px solid #ffb340; opacity: 0.6; }
 
   /* ── Toast ── */
   #toast {
@@ -314,19 +315,33 @@ async function init() {
 }
 
 function processValidators(authorities) {
-  return authorities.map(auth => ({
-    key: auth.authority_ss58,
-    peerId: auth.peer_id || '',
-    identity: auth.identity_name || '',
-    agent: auth.agent_version || 'Unknown',
-    hasDht: auth.has_dht_record,
-    addresses: (auth.addresses || []).map(a => ({
-      full: a.address_short,
-      isOk: a.result?.status === 'Ok',
-      reason: a.result?.reason || ''
-    })),
-    isOnline: auth.addresses?.some(a => a.result?.status === 'Ok')
-  }));
+  return authorities.map(auth => {
+    const addresses = (auth.addresses || []).map(a => {
+      const tcp = a.result?.status;
+      const dial = a.dial_outcome?.status;
+      // Strongest evidence wins: proven reachable > proven failed > never probed.
+      let status = 'skip';
+      if (dial === 'Success' || tcp === 'Ok') status = 'ok';
+      else if (dial === 'Failed' || tcp === 'Failed') status = 'fail';
+      return {
+        full: a.address_short,
+        status,
+        isOk: status === 'ok',
+        reason: (a.dial_outcome?.reason || a.result?.reason || '').replace(/"/g, '&quot;')
+      };
+    });
+    return {
+      key: auth.authority_ss58,
+      peerId: auth.peer_id || '',
+      identity: auth.identity_name || '',
+      agent: auth.agent_version || 'Unknown',
+      hasDht: auth.has_dht_record,
+      addresses,
+      // An identified peer was necessarily connected, even via an address
+      // we never probed ourselves (subp2p-explorer#16).
+      isOnline: !!auth.agent_version || addresses.some(a => a.isOk)
+    };
+  });
 }
 
 function copy(text) {
@@ -388,6 +403,16 @@ function render() {
       <div class="stat-label">Fully Reachable</div>
       <div class="stat-value" style="color:var(--green)">${s.fully_reachable_authorities}</div>
     </div>`;
+  if (s.libp2p_reachable_authorities != null) statsHtml += `
+    <div class="stat-card info">
+      <div class="stat-label">Libp2p Connected</div>
+      <div class="stat-value" style="color:var(--green)">${s.libp2p_reachable_authorities}</div>
+    </div>`;
+  if (s.dial_success != null) statsHtml += `
+    <div class="stat-card info">
+      <div class="stat-label">Dials OK / Probed</div>
+      <div class="stat-value">${s.dial_success}<span style="font-size:1rem;color:var(--text-dim)">/${s.dial_success + (s.dial_failed || 0)}</span></div>
+    </div>`;
   document.getElementById('stats-summary').innerHTML = statsHtml;
 
   document.getElementById('update-ts').textContent = `LAST_SYNC: ${new Date(net.timestamp).toLocaleString()}`;
@@ -445,7 +470,7 @@ function renderList() {
           <span class="field-label">Advertised_Endpoints [${v.addresses.length}]</span>
           <div class="addr-grid" style="display:flex; flex-wrap:wrap; gap:8px;">
             ${v.addresses.map(a => `
-              <div class="addr-chip ${a.isOk ? 'ok' : 'fail'}">
+              <div class="addr-chip ${a.status}"${a.reason ? ` title="${a.reason}"` : ''}>
                 <span>${a.full}</span>
                 <button class="action-btn" style="padding:2px; border:none;" onclick="copy('${a.full}')">${ICON_COPY}</button>
               </div>
