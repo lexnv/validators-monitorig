@@ -140,6 +140,38 @@
   .stat-label { color: var(--text-dim); font-size: 0.65rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; }
   .stat-value { font-size: 2rem; font-weight: 800; font-family: var(--font-mono); }
 
+  /* ── Version Distribution ── */
+  .version-panel {
+    background: var(--surface); border: 1px solid var(--border); padding: 20px;
+    margin-bottom: 32px; backdrop-filter: blur(10px);
+  }
+  .panel-title {
+    color: var(--text-dim); font-size: 0.65rem; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px;
+  }
+  .panel-title .filter-flag { color: var(--accent); }
+  .version-row {
+    display: grid; grid-template-columns: 150px minmax(0, 1fr) 110px; gap: 12px;
+    align-items: center; padding: 5px 8px; cursor: pointer;
+    border-left: 2px solid transparent; transition: 0.2s;
+  }
+  .version-row:hover { background: rgba(255,255,255,0.04); }
+  .version-row.active { background: rgba(230,0,122,0.08); border-left-color: var(--accent); }
+  .version-name {
+    font-family: var(--font-mono); font-size: 0.75rem; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .version-track { height: 10px; background: rgba(255,255,255,0.05); }
+  .version-fill {
+    height: 100%; background: var(--accent); border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 8px var(--accent-glow);
+    transform-origin: left; animation: growX 0.5s ease-out both;
+  }
+  .version-fill.unknown { background: var(--text-dim); opacity: 0.45; box-shadow: none; }
+  .version-count { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text); text-align: right; }
+  .version-count .pct { color: var(--text-dim); }
+  @keyframes growX { from { transform: scaleX(0); } }
+
   /* ── Validator List ── */
   .list-container { display: flex; flex-direction: column; gap: 16px; }
 
@@ -256,6 +288,8 @@
 
   <div class="stats-grid" id="stats-summary"></div>
 
+  <div id="version-dist"></div>
+
   <div id="list" class="list-container"></div>
 </div>
 
@@ -267,6 +301,7 @@ const state = {
   activeNetwork: '',
   searchQuery: '',
   statusFilter: 'all',
+  versionFilter: null,
   viewMode: 'full',
   sortBy: 'status'
 };
@@ -314,8 +349,16 @@ async function init() {
   }
 }
 
+function parseAgent(agent) {
+  // e.g. "Parity Polkadot/v1.16.1-abcdef123 (validator-name)"
+  if (!agent || agent === 'Unknown') return { client: '', version: '' };
+  const client = agent.split('/')[0].trim();
+  const m = agent.match(/v?(\d+\.\d+\.\d+)/);
+  return { client, version: m ? 'v' + m[1] : agent.split('(')[0].trim() };
+}
+
 function processValidators(authorities) {
-  return authorities.map(auth => {
+  const list = authorities.map(auth => {
     const addresses = (auth.addresses || []).map(a => {
       const tcp = a.result?.status;
       const dial = a.dial_outcome?.status;
@@ -335,6 +378,7 @@ function processValidators(authorities) {
       peerId: auth.peer_id || '',
       identity: auth.identity_name || '',
       agent: auth.agent_version || 'Unknown',
+      ...parseAgent(auth.agent_version),
       hasDht: auth.has_dht_record,
       addresses,
       // An identified peer was necessarily connected, even via an address
@@ -342,6 +386,19 @@ function processValidators(authorities) {
       isOnline: !!auth.agent_version || addresses.some(a => a.isOk)
     };
   });
+
+  // Only prefix the client name when the set actually runs more than one client.
+  const multiClient = new Set(list.filter(v => v.client).map(v => v.client)).size > 1;
+  list.forEach(v => {
+    if (!v.version) {
+      v.versionKey = '?';
+      v.versionLabel = 'UNIDENTIFIED';
+    } else {
+      v.versionKey = v.client + '|' + v.version;
+      v.versionLabel = multiClient && v.client ? `${v.client} ${v.version}` : v.version;
+    }
+  });
+  return list;
 }
 
 function copy(text) {
@@ -415,8 +472,38 @@ function render() {
     </div>`;
   document.getElementById('stats-summary').innerHTML = statsHtml;
 
+  renderVersionDist(v);
   document.getElementById('update-ts').textContent = `LAST_SYNC: ${new Date(net.timestamp).toLocaleString()}`;
   renderList();
+}
+
+function renderVersionDist(validators) {
+  const dist = {};
+  validators.forEach(v => {
+    dist[v.versionKey] ??= { key: v.versionKey, label: v.versionLabel, count: 0 };
+    dist[v.versionKey].count++;
+  });
+  const versions = Object.values(dist).sort((a, b) => {
+    if (a.key === '?') return 1;
+    if (b.key === '?') return -1;
+    return b.count - a.count || a.label.localeCompare(b.label);
+  });
+  state._versions = versions;
+
+  const maxCount = Math.max(...versions.map(x => x.count), 1);
+  document.getElementById('version-dist').innerHTML = versions.length ? `
+    <div class="version-panel">
+      <div class="panel-title">Agent_Version_Distribution ${state.versionFilter ? '<span class="filter-flag">// FILTER_ACTIVE [CLICK_ROW_TO_CLEAR]</span>' : '// NODES_PER_RELEASE'}</div>
+      ${versions.map((ver, i) => {
+        const share = (ver.count / validators.length * 100).toFixed(1);
+        return `
+        <div class="version-row ${state.versionFilter === ver.key ? 'active' : ''}" onclick="setVersionFilter(${i})" title="${esc(ver.label)}: ${ver.count} of ${validators.length} nodes (${share}%)">
+          <span class="version-name">${esc(ver.label)}</span>
+          <div class="version-track"><div class="version-fill ${ver.key === '?' ? 'unknown' : ''}" style="width:${(ver.count / maxCount * 100).toFixed(1)}%; animation-delay:${i * 0.04}s"></div></div>
+          <span class="version-count">${ver.count} <span class="pct">/ ${share}%</span></span>
+        </div>`;
+      }).join('')}
+    </div>` : '';
 }
 
 function renderList() {
@@ -426,7 +513,8 @@ function renderList() {
     const q = state.searchQuery.toLowerCase();
     const matchSearch = !q || v.identity.toLowerCase().includes(q) || v.key.toLowerCase().includes(q) || v.peerId.toLowerCase().includes(q) || v.agent.toLowerCase().includes(q) || v.addresses.some(a => a.full.toLowerCase().includes(q));
     const matchFilter = state.statusFilter === 'all' || (state.statusFilter === 'online' ? v.isOnline : !v.isOnline);
-    return matchSearch && matchFilter;
+    const matchVersion = !state.versionFilter || v.versionKey === state.versionFilter;
+    return matchSearch && matchFilter && matchVersion;
   });
 
   filtered.sort((a, b) => {
@@ -482,8 +570,13 @@ function renderList() {
   `).join('');
 }
 
-window.switchNetwork = (n) => { state.activeNetwork = n; render(); };
+window.switchNetwork = (n) => { state.activeNetwork = n; state.versionFilter = null; render(); };
 window.setStatusFilter = (f) => { state.statusFilter = f; render(); };
+window.setVersionFilter = (i) => {
+  const key = state._versions?.[i]?.key;
+  state.versionFilter = state.versionFilter === key ? null : key;
+  render();
+};
 
 document.getElementById('search-input').addEventListener('input', e => { state.searchQuery = e.target.value; renderList(); });
 
@@ -509,6 +602,7 @@ document.getElementById('download-btn').addEventListener('click', () => {
 });
 
 function shorten(s, l=8) { return s.length <= l*2 ? s : s.slice(0,l)+'...'+s.slice(-l); }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 init();
 </script>

@@ -33,6 +33,8 @@ Seamlessly switch between major ecosystem networks to monitor specific validator
 
 - Summary Cards: At-a-glance stats for total nodes, DHT record counts, and address reachability percentages.
 
+- Version Distribution: Bar chart of agent versions across the validator set, including an "unidentified" bucket for nodes that never responded to identify. Click a version to filter the validator list to nodes running that release.
+
 - Portability: Export raw JSON reports for any network for offline analysis or custom tooling.
 
 ## Architecture
