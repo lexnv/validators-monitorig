@@ -161,9 +161,22 @@
     transform-origin: left; animation: growX 0.5s ease-out both;
   }
   .version-fill.unknown { background: var(--text-dim); opacity: 0.45; box-shadow: none; }
+  .version-fill.net { background: #8a63ff; box-shadow: 0 0 8px rgba(138, 99, 255, 0.35); }
   .version-count { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text); text-align: right; }
   .version-count .pct { color: var(--text-dim); }
   @keyframes growX { from { transform: scaleX(0); } }
+
+  /* ── All Reached Nodes (network-wide crawl) ── */
+  .version-row.static { cursor: default; }
+  .version-row.static:hover { background: transparent; }
+  .allnodes-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .meta-chip {
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px;
+    font-family: var(--font-mono);
+  }
+  .meta-chip .chip-label { color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.6rem; }
+  .meta-chip .chip-value { color: var(--text); font-weight: 700; font-size: 0.75rem; }
 
   /* ── Validator List ── */
   .list-container { display: flex; flex-direction: column; gap: 16px; }
@@ -280,6 +293,8 @@
 
   <div id="transport-dist"></div>
 
+  <div id="allnodes-dist"></div>
+
   <div id="list" class="list-container"></div>
 </div>
 
@@ -315,6 +330,10 @@ async function init() {
         state.networks[name] = {
           validators: processValidators(data.authorities),
           stats: data.stats || {},
+          // Aggregate stats over every node reached during the crawl
+          // (validators and regular network nodes alike); absent in
+          // reports generated before the all-nodes report existed.
+          allNodes: data.all_nodes || null,
           timestamp: data.timestamp || lastModified || new Date().toISOString(),
           raw: data
         };
@@ -485,8 +504,66 @@ function render() {
 
   renderVersionDist(v);
   renderTransportDist(v);
+  renderAllNodes(net.allNodes);
   document.getElementById('update-ts').textContent = `LAST_SYNC: ${new Date(net.timestamp).toLocaleString()}`;
   renderList();
+}
+
+function renderAllNodes(all) {
+  // Everything the crawler talked to while walking the DHT, not just the
+  // validator set. Rows are informational only: there is no per-node data
+  // in the report to filter the validator list by.
+  const el = document.getElementById('allnodes-dist');
+  if (!all) { el.innerHTML = ''; return; }
+
+  const identified = all.identified || 0;
+  const pctOf = n => identified ? (n / identified * 100).toFixed(1) : '0.0';
+
+  const t = all.transports || {};
+  const rows = [
+    { key: 'TCP', count: t.tcp || 0 },
+    { key: 'WebSocket', count: t.websocket || 0 },
+    { key: 'WebRTC', count: t.webrtc || 0 },
+    { key: 'QUIC', count: t.quic || 0 },
+  ].filter(r => r.key !== 'QUIC' || r.count > 0);
+  if (all.no_known_transport) rows.push({ key: 'UNKNOWN', count: all.no_known_transport });
+  const maxCount = Math.max(...rows.map(r => r.count), 1);
+
+  // The whole network runs far more releases than the validator set; keep
+  // the panel readable by folding the tail into one row.
+  const MAX_VERSIONS = 12;
+  const versions = Object.entries(all.agent_versions || {})
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const shown = versions.slice(0, MAX_VERSIONS);
+  const rest = versions.slice(MAX_VERSIONS).reduce((sum, [, c]) => sum + c, 0);
+  if (rest > 0) shown.push([`OTHER_VERSIONS [${versions.length - MAX_VERSIONS}]`, rest]);
+  const maxVer = Math.max(...shown.map(([, c]) => c), 1);
+
+  el.innerHTML = `
+    <div class="version-panel">
+      <div class="panel-title">Network_Scan // ALL_NODES_REACHED_DURING_CRAWL (VALIDATORS + OTHERS)</div>
+      <div class="allnodes-meta">
+        <div class="meta-chip"><span class="chip-label">Peers_Connected</span><span class="chip-value">${all.reached_peers ?? '?'}</span></div>
+        <div class="meta-chip"><span class="chip-label">Identified</span><span class="chip-value">${identified}</span></div>
+        <div class="meta-chip"><span class="chip-label">Validators</span><span class="chip-value">${all.validators ?? 0}</span></div>
+        <div class="meta-chip"><span class="chip-label">Other_Nodes</span><span class="chip-value">${all.non_validators ?? 0}</span></div>
+      </div>
+      <div class="panel-title">Transports // NODES_PER_TRANSPORT (IDENTIFY, % OF IDENTIFIED)</div>
+      ${rows.map((row, i) => `
+        <div class="version-row static" title="${row.key}: ${row.count} of ${identified} identified nodes (${pctOf(row.count)}%)">
+          <span class="version-name">${row.key}</span>
+          <div class="version-track"><div class="version-fill net ${row.count === 0 ? 'unknown' : ''}" style="width:${(row.count / maxCount * 100).toFixed(1)}%; animation-delay:${i * 0.04}s"></div></div>
+          <span class="version-count">${row.count} <span class="pct">/ ${pctOf(row.count)}%</span></span>
+        </div>`).join('')}
+      ${shown.length ? `
+      <div class="panel-title" style="margin-top:14px">Agent_Versions // ALL_IDENTIFIED_NODES</div>
+      ${shown.map(([label, count], i) => `
+        <div class="version-row static" title="${esc(label)}: ${count} of ${identified} identified nodes (${pctOf(count)}%)">
+          <span class="version-name">${esc(label)}</span>
+          <div class="version-track"><div class="version-fill net" style="width:${(count / maxVer * 100).toFixed(1)}%; animation-delay:${i * 0.04}s"></div></div>
+          <span class="version-count">${count} <span class="pct">/ ${pctOf(count)}%</span></span>
+        </div>`).join('')}` : ''}
+    </div>`;
 }
 
 function renderTransportDist(validators) {

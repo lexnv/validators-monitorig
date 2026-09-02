@@ -39,6 +39,8 @@ Seamlessly switch between major ecosystem networks to monitor specific validator
 
 - Identify Endpoints: Each validator card lists the addresses the node reported about itself during the identify handshake, alongside the DHT-advertised endpoints.
 
+- Network Scan: Aggregate view of every node the crawler reached while walking the DHT — not just the validator set. Shows how many peers were connected and identified, the validator/other split, how many nodes run TCP, WebSocket and WebRTC (plus QUIC when present), and the agent version distribution across the whole network (requires reports generated with the `all_nodes` section).
+
 - Portability: Export raw JSON reports for any network for offline analysis or custom tooling.
 
 ## Architecture
