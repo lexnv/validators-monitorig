@@ -39,7 +39,7 @@
     --radius: 14px;
   }
 
-  html { scrollbar-color: rgba(255,255,255,0.14) #06071a; }
+  html { font-size: clamp(14px, 0.35vw + 11.5px, 18px); scrollbar-color: rgba(255,255,255,0.14) #06071a; }
   ::-webkit-scrollbar { width: 10px; }
   ::-webkit-scrollbar-track { background: #06071a; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; border: 2px solid #06071a; }
@@ -108,8 +108,10 @@
 
   /* ── Outer glass shell ── */
   .shell {
+    --gutter: clamp(10px, 1.5vw, 28px);
     position: relative; z-index: 1;
-    max-width: 1240px; margin: 28px auto; padding: 40px 44px 48px;
+    width: calc(100% - 2 * var(--gutter)); margin: var(--gutter) auto;
+    padding: clamp(22px, 2.4vw, 44px) clamp(16px, 2.6vw, 48px) clamp(28px, 2.6vw, 48px);
     border-radius: 26px;
     background: linear-gradient(180deg, rgba(30, 34, 80, 0.22), rgba(12, 14, 40, 0.30));
     border: 1px solid rgba(255,255,255,0.13);
@@ -200,7 +202,21 @@
   .action-btn span { color: #fff; }
 
   /* ── Stats ── */
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 26px; }
+  .stats-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-bottom: 26px; align-items: stretch; }
+  @media (min-width: 1400px) { .stats-row { grid-template-columns: minmax(480px, 680px) minmax(0, 1fr); } }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .stat-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 22px;
+    align-content: center; padding: 14px 20px;
+    border: 1px dashed rgba(255,255,255,0.12); border-radius: var(--radius);
+    background: rgba(3, 4, 16, 0.25);
+  }
+  .stat-strip:empty { display: none; }
+  .stat-item { display: flex; align-items: baseline; gap: 10px; min-width: 0; font-family: var(--font-mono); white-space: nowrap; }
+  .stat-item .k { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; }
+  .stat-item .k::after { content: ':'; }
+  .stat-item .v { font-size: 0.9rem; font-weight: 700; color: #fff; }
+  .stat-item .v .sub { font-size: 0.7rem; font-weight: 600; color: var(--text-dim); }
   .stat-card {
     --c: var(--white);
     position: relative; padding: 16px 18px 18px; cursor: pointer; overflow: hidden;
@@ -219,8 +235,6 @@
     border-style: solid; border-width: 0 0 16px 16px;
     border-color: transparent transparent rgba(var(--c), 0.55) transparent;
   }
-  .stat-card.info { cursor: default; }
-  .stat-card.info:hover { transform: none; border-color: rgba(var(--c), 0.32); }
   .stat-copy {
     position: absolute; top: 12px; right: 12px; background: transparent; border: none;
     color: rgba(var(--c), 0.8); cursor: pointer; padding: 4px; border-radius: 6px; line-height: 0;
@@ -235,15 +249,16 @@
     font: 800 2rem/1 var(--font-mono); letter-spacing: -0.02em;
     color: rgb(var(--c)); text-shadow: 0 0 16px rgba(var(--c), 0.5);
   }
-  .stat-sub { font-size: 1rem; font-weight: 600; color: var(--text-dim); text-shadow: none; }
   .t-pink  { --c: var(--pink); }
   .t-green { --c: var(--green); }
   .t-red   { --c: var(--red); }
-  .t-cyan  { --c: var(--cyan); }
-  .t-white { --c: var(--white); }
 
   /* ── Distribution panels ── */
   .panel { padding: 20px 22px; margin-bottom: 22px; }
+  .dist-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 22px; margin-bottom: 22px; align-items: start; }
+  .dist-row:not(:has(.panel)) { display: none; }
+  .dist-row > div:empty { display: none; }
+  .dist-row .panel { margin-bottom: 0; }
   .panel-title {
     font: 600 0.62rem var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase;
     color: rgba(225,228,255,0.7); margin-bottom: 14px;
@@ -289,7 +304,8 @@
   .meta-chip .chip-value { color: #fff; font-weight: 700; font-size: 0.76rem; }
 
   /* ── Validator cards ── */
-  .list-container { display: flex; flex-direction: column; gap: 18px; }
+  .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr)); gap: 18px; align-items: start; }
+  .list-footer, .list-empty { grid-column: 1 / -1; }
   .card {
     padding: 22px 24px; position: relative;
     content-visibility: auto; contain-intrinsic-size: auto 280px;
@@ -383,6 +399,11 @@
     .header-meta { text-align: left; padding-top: 0; }
     .version-row { grid-template-columns: 90px minmax(0, 1fr) 96px; gap: 10px; }
     .tab-btn { padding: 8px 14px; }
+    .stats-grid { gap: 8px; }
+    .stat-card { padding: 12px 12px 14px; }
+    .stat-value { font-size: 1.5rem; }
+    .stat-label { padding-right: 20px; }
+    .stat-strip { grid-template-columns: 1fr; padding: 12px 14px; }
     .search-wrap::after { display: none; }
   }
 
@@ -426,11 +447,15 @@
     </div>
   </section>
 
-  <div class="stats-grid" id="stats-summary"></div>
+  <div class="stats-row">
+    <div class="stats-grid" id="stats-summary"></div>
+    <div class="stat-strip" id="stats-strip"></div>
+  </div>
 
-  <div id="version-dist"></div>
-
-  <div id="transport-dist"></div>
+  <div class="dist-row">
+    <div id="version-dist"></div>
+    <div id="transport-dist"></div>
+  </div>
 
   <div id="allnodes-dist"></div>
 
@@ -937,17 +962,20 @@ function formatTimestamp(ts) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}, ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-// Summary tile. `filter` makes it a clickable status filter; otherwise it is informational.
-function statCard({ theme, label, value, sub = '', filter = null }) {
-  const active = filter && state.statusFilter === filter ? 'active' : '';
-  const click = filter ? `onclick="setStatusFilter('${filter}')"` : '';
-  const copyVal = sub !== '' ? `${value}/${sub}` : String(value);
+// Clickable summary tile that doubles as the status filter.
+function statCard({ theme, label, value, filter }) {
   return `
-    <div class="stat-card ${theme} ${filter ? '' : 'info'} ${active}" ${click}>
-      <button class="stat-copy" title="Copy value" onclick="event.stopPropagation(); copy('${copyVal}')">${ICON_COPY}</button>
+    <div class="stat-card ${theme} ${state.statusFilter === filter ? 'active' : ''}" onclick="setStatusFilter('${filter}')">
+      <button class="stat-copy" title="Copy value" onclick="event.stopPropagation(); copy('${value}')">${ICON_COPY}</button>
       <div class="stat-label">${label}</div>
-      <div class="stat-value">${value}${sub !== '' ? `<span class="stat-sub">/${sub}</span>` : ''}</div>
+      <div class="stat-value">${value}</div>
     </div>`;
+}
+
+// Informational figure rendered as plain text in the strip next to the tiles.
+function statItem(label, value, sub) {
+  const v = sub != null ? `${value}<span class="sub">/${sub}</span>` : value;
+  return `<div class="stat-item"><span class="k">${label}</span><span class="v">${v}</span></div>`;
 }
 
 function render() {
@@ -966,13 +994,16 @@ function render() {
   let statsHtml = statCard({ theme: 't-pink', label: 'Total Nodes', value: v.length, filter: 'all' })
     + statCard({ theme: 't-green', label: 'Reachable', value: online, filter: 'online' })
     + statCard({ theme: 't-red', label: 'Unreachable', value: v.length - online, filter: 'offline' });
-  if (s.with_dht_records != null) statsHtml += statCard({ theme: 't-white', label: 'DHT Records', value: s.with_dht_records });
-  if (s.identified != null) statsHtml += statCard({ theme: 't-cyan', label: 'Identified', value: s.identified });
-  if (s.total_addresses != null) statsHtml += statCard({ theme: 't-white', label: 'Addrs Reachable', value: s.reachable_public, sub: s.total_addresses });
-  if (s.fully_reachable_authorities != null) statsHtml += statCard({ theme: 't-green', label: 'Fully Reachable', value: s.fully_reachable_authorities });
-  if (s.libp2p_reachable_authorities != null) statsHtml += statCard({ theme: 't-green', label: 'Libp2p Connected', value: s.libp2p_reachable_authorities });
-  if (s.dial_success != null) statsHtml += statCard({ theme: 't-white', label: 'Dials OK / Probed', value: s.dial_success, sub: s.dial_success + (s.dial_failed || 0) });
   document.getElementById('stats-summary').innerHTML = statsHtml;
+
+  let stripHtml = '';
+  if (s.with_dht_records != null) stripHtml += statItem('DHT_Records', s.with_dht_records);
+  if (s.identified != null) stripHtml += statItem('Identified', s.identified);
+  if (s.total_addresses != null) stripHtml += statItem('Addrs_Reachable', s.reachable_public, s.total_addresses);
+  if (s.fully_reachable_authorities != null) stripHtml += statItem('Fully_Reachable', s.fully_reachable_authorities);
+  if (s.libp2p_reachable_authorities != null) stripHtml += statItem('Libp2p_Connected', s.libp2p_reachable_authorities);
+  if (s.dial_success != null) stripHtml += statItem('Dials_OK/Probed', s.dial_success, s.dial_success + (s.dial_failed || 0));
+  document.getElementById('stats-strip').innerHTML = stripHtml;
 
   renderVersionDist(v);
   renderTransportDist(v);
